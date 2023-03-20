@@ -1,45 +1,50 @@
 import cv2
+import numpy as np
+import serial
+import time
 
-video = cv2.VideoCapture(0)
-smile_cascade = cv2.CascadeClassifier("haarcascade_smile.xml")
-face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+# Initialize the Haar Cascade face and mouth detectors
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+mouth_cascade = cv2.CascadeClassifier('haarcascade_mcs_mouth.xml')
+
+# Initialize the video capture and serial communication
+cap = cv2.VideoCapture(0)
+ArduinoSerial = serial.Serial('com7', 9600, timeout=0.1)
+time.sleep(1)
 
 while True:
-    # get the next frame from the video and convert it to grayscale
-    _, frame = video.read()
+    # Capture a frame from the video feed
+    ret, frame = cap.read()
+    # Convert the frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    
-    # apply our face detector to the grayscale frame
-    faces = face_cascade.detectMultiScale(gray, 1.1, 8)
-    
-    # go through the face bounding boxes 
-    for (x, y, w, h) in faces:
-        # draw a rectangle around the face on the frame
-        cv2.rectangle(frame, (x, y), (x + w, y + h),blue, 2)
-        # get the region of the face
-        roi = gray[y:y + h, x:x + w]
+    # Detect faces in the grayscale image
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    # Loop through each detected face
+    for (x,y,w,h) in faces:
+        # Draw a rectangle around the face
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
+        # Extract the region of interest (ROI) for the mouth
+        roi_gray = gray[y+(h//2):y+h, x:x+w]
+        roi_color = frame[y+(h//2):y+h, x:x+w]
+        # Detect mouths in the mouth ROI
+        mouths = mouth_cascade.detectMultiScale(roi_gray, 1.3, 5)
+        # Loop through each detected mouth
+        for (mx,my,mw,mh) in mouths:
+            # Draw a rectangle around the mouth
+            cv2.rectangle(roi_color,(mx,my),(mx+mw,my+mh),(0,255,0),2)
+            # Check if the mouth ROI is smiling or not
+            if my + mh/2 > h/2:
+                # Send a signal to Arduino if smiling
+                ArduinoSerial.write(b'1')
 
- # apply our smile detector to the region of the face
-        smile_rects, rejectLevels, levelWeights = smile_cascade.detectMultiScale3(roi, 2.5, 20, outputRejectLevels=True)
+    # Display the video feed
+    cv2.imshow('Smile Detector',frame)
 
-        # weaker detections are classified as "Not Smiling"
-        # while stronger detection are classified as "Smiling" 
-        if len(levelWeights) == 0:
-            cv2.putText(frame, "Not Smiling", (20, 20),
-		            cv2.FONT_HERSHEY_SIMPLEX, 0.75, blue, 3)
-        else:
-            if max(levelWeights) < 2:
-                cv2.putText(frame, "Not Smiling", (20, 20),
-		            cv2.FONT_HERSHEY_SIMPLEX, 0.75, blue, 3)
-            else:
-                cv2.putText(frame, "Smiling", (20, 20),
-		            cv2.FONT_HERSHEY_SIMPLEX, 0.75, blue, 3)
-        
-    cv2.imshow('Frame', frame)
-    # wait for 1 milliseconde and if the q key is pressed, we break the loop
-    if cv2.waitKey(1) == ord('q'):
+    # Exit the loop if 'q' is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    
-# release the video capture and close all windows
-video.release()
+
+# Release the video capture and close the serial communication
+cap.release()
+ArduinoSerial.close()
 cv2.destroyAllWindows()
