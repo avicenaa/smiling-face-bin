@@ -3,8 +3,8 @@
 
 Servo myservo;
 
-const char* ssid = "nama_wifi"; //nama wifi yang akan dihubungi
-const char* password = "password_wifi"; //password wifi yang akan dihubungi
+const char* ssid = "Av"; //nama wifi yang akan dihubungi
+const char* password = "11111111"; //password wifi yang akan dihubungi
 
 WiFiServer server(80);
 
