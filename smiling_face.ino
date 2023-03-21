@@ -9,7 +9,7 @@ const char* password = "11111111"; //password wifi yang akan dihubungi
 WiFiServer server(80);
 
 void setup() {
-  myservo.attach(D1); //servo dihubungkan ke pin D1
+  myservo.attach(5); //servo dihubungkan ke pin D1
   Serial.begin(115200);
   delay(10);
 
