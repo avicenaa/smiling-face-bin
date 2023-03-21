@@ -25,7 +25,7 @@ while True:
         for (ex,ey,ew,eh) in smiles:
             cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
             # send HTTP GET request to ESP8266
-            url = "http://192.168.1.4/?smile"
+            url = "http://192.168.43.200/?smile"
             requests.get(url)
 
     cv2.imshow('frame', frame)
